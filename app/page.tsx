@@ -33,7 +33,6 @@ type MemoPage = {
   id: string;
   name: string;
   image: string;
-  tags: string[];
   params: [number, number, number];
   notes: Note[];
   selectedNoteId: string;
@@ -60,7 +59,6 @@ const initialState: AppState = {
       id: 'page-1',
       name: 'アイデアノート',
       image: DEFAULT_IMAGE,
-      tags: ['TAG 1'],
       params: [4, 2, 3],
       selectedNoteId: 'note-1',
       notes: [
@@ -80,7 +78,6 @@ const initialState: AppState = {
       id: 'page-2',
       name: 'ストック',
       image: DEFAULT_IMAGE,
-      tags: ['TAG 2'],
       params: [2, 5, 1],
       selectedNoteId: 'note-3',
       notes: [
@@ -196,7 +193,6 @@ export default function Home() {
       id: pageId,
       name: `新しいページ ${pageNumber}`,
       image: DEFAULT_IMAGE,
-      tags: [],
       params: [0, 0, 0],
       selectedNoteId: noteId,
       notes: [{ id: noteId, title: '新しいメモ', body: '' }],
@@ -224,15 +220,6 @@ export default function Home() {
       notes: page.notes.map((note) =>
         note.id === page.selectedNoteId ? { ...note, ...patch } : note,
       ),
-    }));
-  }
-
-  function toggleTag(tag: string) {
-    updateActivePage((page) => ({
-      ...page,
-      tags: page.tags.includes(tag)
-        ? page.tags.filter((item) => item !== tag)
-        : [...page.tags, tag],
     }));
   }
 
@@ -394,21 +381,7 @@ export default function Home() {
             </figcaption>
           </figure>
 
-          <section className="parameter-panel" aria-label="タグとパラメータ">
-            <div className="tag-row">
-              {['TAG 1', 'TAG 2'].map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  className="tag-button"
-                  data-active={activePage.tags.includes(tag)}
-                  onClick={() => toggleTag(tag)}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-
+          <section className="parameter-panel" aria-label="パラメータ">
             <div className="meter-list">
               {activePage.params.map((value, index) => (
                 <div key={index} className="meter-group">
