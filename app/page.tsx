@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Check,
   ChevronLeft,
@@ -50,8 +50,41 @@ const DEFAULT_IMAGE =
   'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=86';
 
 const STORAGE_KEY = 'memo-studio-state-v1';
+const MAX_IMAGE_EDGE = 1400;
 
 const createId = () => crypto.randomUUID();
+
+function resizeImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+      const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(image.width, image.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      const context = canvas.getContext('2d');
+
+      if (!context) {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Canvas is unavailable'));
+        return;
+      }
+
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(objectUrl);
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Image could not be loaded'));
+    };
+
+    image.src = objectUrl;
+  });
+}
 
 const initialState: AppState = {
   activePageId: 'page-1',
@@ -112,6 +145,8 @@ export default function Home() {
   const [saveState, setSaveState] = useState<'loading' | 'saving' | 'saved' | 'offline'>(
     'loading',
   );
+  const [imageLoading, setImageLoading] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const activePage = useMemo(
     () => data.pages.find((page) => page.id === data.activePageId) ?? data.pages[0],
@@ -210,6 +245,19 @@ export default function Home() {
       params[index] = Math.max(0, Math.min(5, params[index] + direction));
       return { ...page, params };
     });
+  }
+
+  async function changeImage(file: File | undefined) {
+    if (!file) return;
+    setImageLoading(true);
+    try {
+      const image = await resizeImage(file);
+      updateActivePage((page) => ({ ...page, image }));
+    } catch {
+      setSaveState('offline');
+    } finally {
+      setImageLoading(false);
+    }
   }
 
   return (
@@ -355,11 +403,30 @@ export default function Home() {
 
         <div className="workspace-grid">
           <figure className="image-panel">
-            <img src={activePage.image} alt="ページのイメージ" />
-            <figcaption>
-              <ImageIcon aria-hidden="true" />
-              PAGE IMAGE
-            </figcaption>
+            <button
+              type="button"
+              className="image-change-button"
+              onClick={() => imageInputRef.current?.click()}
+              aria-label="ページ画像を変更"
+            >
+              <img src={activePage.image} alt="ページのイメージ" />
+              <figcaption>
+                <ImageIcon aria-hidden="true" />
+                {imageLoading ? '読み込み中' : 'タップして変更'}
+              </figcaption>
+            </button>
+            <input
+              ref={imageInputRef}
+              className="image-file-input"
+              type="file"
+              accept="image/*"
+              onChange={(event) => {
+                const input = event.currentTarget;
+                void changeImage(input.files?.[0]).finally(() => {
+                  input.value = '';
+                });
+              }}
+            />
           </figure>
 
           <section className="parameter-panel" aria-label="パラメータ">

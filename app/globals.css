@@ -77,11 +77,15 @@
 }
 
 html {
+  height: 100%;
+  overflow: hidden;
   background: #070709;
   color-scheme: dark;
 }
 
 body {
+  height: 100%;
+  overflow: hidden;
   margin: 0;
   min-width: 320px;
   background:
@@ -102,14 +106,18 @@ button {
 }
 
 .app-viewport {
-  min-height: 100svh;
+  height: 100dvh;
+  overflow: hidden;
   display: grid;
   place-items: start center;
 }
 
 .memo-shell {
   width: min(100%, 780px);
-  min-height: 100svh;
+  height: 100dvh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   background: #0c0d10;
   box-shadow: 0 0 80px rgba(0, 0, 0, 0.72);
@@ -119,6 +127,7 @@ button {
   position: relative;
   z-index: 10;
   height: 78px;
+  flex: 0 0 78px;
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr) 92px;
   align-items: center;
@@ -227,10 +236,12 @@ button {
 }
 
 .workspace-grid {
-  min-height: calc(100svh - 78px);
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: clamp(300px, 42svh, 390px) minmax(430px, 1fr);
+  grid-template-rows: clamp(280px, 42svh, 390px) minmax(0, 1fr);
 }
 
 .image-panel {
@@ -246,8 +257,30 @@ button {
 .image-panel img {
   width: 100%;
   height: 100%;
+  display: block;
   object-fit: cover;
   filter: saturate(0.72) contrast(1.04);
+}
+
+.image-change-button {
+  width: 100%;
+  height: 100%;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.image-change-button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -3px;
+}
+
+.image-file-input {
+  display: none;
 }
 
 .image-panel::after {
@@ -275,6 +308,7 @@ button {
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.14em;
+  pointer-events: none;
 }
 
 .image-panel figcaption svg {
@@ -363,6 +397,8 @@ button {
 .note-list-panel {
   grid-column: span 1;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   display: grid;
   grid-template-rows: minmax(0, 1fr) 76px;
   border-right: 1px solid var(--border);
@@ -372,6 +408,8 @@ button {
 .note-list-scroll {
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .note-list-item {
@@ -437,6 +475,8 @@ button {
 .note-editor {
   grid-column: span 2;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   padding: clamp(24px, 5vw, 38px);
@@ -463,8 +503,11 @@ button {
 }
 
 .note-body-input {
-  min-height: 290px;
+  min-height: 0;
   flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   resize: none;
   padding: 20px 0 0;
   border: 0;
@@ -632,6 +675,7 @@ button {
 @media (max-width: 520px) {
   .app-header {
     height: 72px;
+    flex-basis: 72px;
     grid-template-columns: 48px minmax(0, 1fr) 70px;
     padding-inline: 8px;
   }
@@ -642,9 +686,8 @@ button {
   }
 
   .workspace-grid {
-    min-height: calc(100svh - 72px);
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: clamp(290px, 39svh, 360px) minmax(440px, 1fr);
+    grid-template-rows: clamp(240px, 39svh, 360px) minmax(0, 1fr);
   }
 
   .parameter-panel {
@@ -702,15 +745,12 @@ button {
 
 @media (min-width: 781px) {
   .memo-shell {
-    min-height: calc(100svh - 48px);
+    height: calc(100dvh - 48px);
     margin-block: 24px;
     border: 1px solid var(--border);
     border-radius: 24px;
   }
 
-  .workspace-grid {
-    min-height: calc(100svh - 126px);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
