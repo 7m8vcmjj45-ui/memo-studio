@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Check,
   ChevronLeft,
@@ -48,6 +48,8 @@ type AppState = {
 
 const DEFAULT_IMAGE =
   'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=86';
+
+const STORAGE_KEY = 'memo-studio-state-v1';
 
 const createId = () => crypto.randomUUID();
 
@@ -110,7 +112,6 @@ export default function Home() {
   const [saveState, setSaveState] = useState<'loading' | 'saving' | 'saved' | 'offline'>(
     'loading',
   );
-  const deviceKey = useRef('');
 
   const activePage = useMemo(
     () => data.pages.find((page) => page.id === data.activePageId) ?? data.pages[0],
@@ -122,47 +123,27 @@ export default function Home() {
     activePage.notes[0];
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadState() {
-      let key = window.localStorage.getItem('memo-studio-device-key');
-      if (!key) {
-        key = crypto.randomUUID();
-        window.localStorage.setItem('memo-studio-device-key', key);
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+        if (isAppState(parsed)) setData(parsed);
       }
-      deviceKey.current = key;
-
-      try {
-        const response = await fetch(`/api/state?key=${encodeURIComponent(key)}`);
-        if (response.ok) {
-          const saved = (await response.json()) as { state?: unknown };
-          if (!cancelled && isAppState(saved.state)) setData(saved.state);
-        }
-        if (!cancelled) setSaveState('saved');
-      } catch {
-        if (!cancelled) setSaveState('offline');
-      } finally {
-        if (!cancelled) setHydrated(true);
-      }
+      setSaveState('saved');
+    } catch {
+      setSaveState('offline');
+    } finally {
+      setHydrated(true);
     }
-
-    void loadState();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   useEffect(() => {
-    if (!hydrated || !deviceKey.current) return;
+    if (!hydrated) return;
     setSaveState('saving');
-    const timeout = window.setTimeout(async () => {
+    const timeout = window.setTimeout(() => {
       try {
-        const response = await fetch('/api/state', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: deviceKey.current, state: data }),
-        });
-        setSaveState(response.ok ? 'saved' : 'offline');
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        setSaveState('saved');
       } catch {
         setSaveState('offline');
       }
@@ -367,7 +348,7 @@ export default function Home() {
               : saveState === 'saving'
                 ? '保存中'
                 : saveState === 'offline'
-                  ? '再接続待ち'
+                  ? '保存できません'
                   : '保存済み'}
           </div>
         </header>
